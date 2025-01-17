@@ -85,13 +85,7 @@ class Palette:
     
     # Function for reversing the order of colors if needed
     def reverse(self):
-        _colors = [c for c in self.colors]
-        _colors.reverse()
-        self.colors = _colors
-        print(_colors)
-        # print(self.hex())
-        # self.colors.reverse()
-        # print(self.hex())
+        self.colors = self.colors[::-1]
         return self
 
 ### FlexokiColors ###
@@ -324,7 +318,7 @@ class FlexokiSchema:
                 def _filter_l(self, l, clist):
                     cfilt = []
                     # Getting all the lightness values
-                    l_all = l_values
+                    l_all = [l for l in l_values]
                     # Checking if a lightness is passed
                     if l is not None:
                         # If l is a single integer
@@ -410,20 +404,3 @@ Flexoki.colors.red_50
 
 Flexoki.colors.filter("r", 150)
 Flexoki.filter("r", 150)
-
-Flexoki.filter("krb", 150, returns="colors")
-Flexoki.filter("krb", slice(150,300), order="h_l", returns="colors")
-Flexoki.filter("krb", slice(150,300), order="l_h", returns="colors")
-Flexoki.filter("krb", slice(300,150), order="l_h", returns="colors")
-
-Flexoki.filter("krb", slice(300,150), order="l_h", returns="palette").hex(names=True)
-Flexoki.filter("krb", slice(300,150), order="l_h", returns="palette").hex()
-Flexoki.filter("krb", slice(300,150), order="l_h", returns="palette").reverse().hex()
-
-test = Flexoki.filter("krb", slice(300,150), order="l_h", returns="palette").hex()
-test
-test.reverse()
-test
-Flexoki.filter("krb", slice(300,150), order="l_h", returns="palette").hex().reverse()
-Flexoki.filter("krb", slice(300,150), order="l_h", returns="palette").hex()[::-1]
-test[::-1]
