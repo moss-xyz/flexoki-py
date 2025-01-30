@@ -1,4 +1,4 @@
-from flexoki import FlexokiSchema
+from .core import FlexokiSchema
 
 # An initialized object of the FlexokiSchema class
 Flexoki = FlexokiSchema()
