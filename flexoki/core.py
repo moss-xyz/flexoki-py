@@ -1,6 +1,9 @@
 from typing import List, Optional, Tuple, Literal, Iterable
 from dataclasses import dataclass
-from flexoki.utils import h_codes, _parse_hstring, l_values
+import matplotlib
+import matplotlib.colors
+import matplotlib.cm
+from flexoki.utils import h_codes, l_values
 
 ### Color ###
 # Class for each individual color in the palette
@@ -88,16 +91,43 @@ class Palette:
         self.colors = self.colors[::-1]
         return self
 
-### FlexokiColors ###
+    # Function to create a matplotlib colormap from the selected palette
+    # If kind is set to 'discrete', will create a Listed Colormap
+    # If kind is set to 'smooth', will create a LinearSegmentedColormap
+    # If register is a string, that will be used to register it with matplotlib's colormaps list
+    def to_colormap(self, kind: Literal["discrete", "smooth"]="discrete", register=None):
+        if not isinstance(kind, str):
+            raise Exception(f"Invalid input for kind: {kind}; the only accepted values are 'discrete' (for ListedColormaps) or 'smooth' (for LinearSegmentedColormaps).")
+        elif kind.lower() not in ["discrete", "smooth"]:
+            raise Exception(f"Invalid input for kind: {kind}; the only accepted values are 'discrete' (for ListedColormaps) or 'smooth' (for LinearSegmentedColormaps).")
+        else:
+            if kind == "discrete":
+                cmap = matplotlib.colors.ListedColormap(self.hex())
+            else:
+                cmap = matplotlib.colors.LinearSegmentedColormap.from_list("mycmap", self.hex())
+                matplotlib.cm.unregister("mycmap") # unregistering this specific colormap
+
+            if register is not None and not isinstance(register, str):
+                raise Exception(f"Invalid input for register: {register}; only strings are accepted.")
+            else:
+                matplotlib.colormaps.register(cmap, name=register)
+            
+            return cmap
+        
+### FlexokiSchema ###
 # Class to store all the colors and allow for easy selection
 class FlexokiSchema:
     def __init__(self):
+
+        # Setting up default properties
+        self._theme = "light"
+        self._lightness = 400
 
         # This class will handle all the individual colors
         class colors:
             # Loading all colors on initialization
             def __init__(self):
-                # Each color will be accessible from within this dictionary (FlexokiPalette.colors.dict)
+                # Each color will be accessible from within this dictionary (FlexokiSchema.colors.dict)
                 self.dict = {
                     # Base (and paper/black)
                     "paper"    :{"h":"k", "l":0,    "hex":"#FFFCF0", "rgb":(255, 252, 240)},
@@ -237,9 +267,38 @@ class FlexokiSchema:
                     cname = n.lower().replace("-","_")
                     setattr(self, cname, Color(n, **c))
                 
+                self._update_defaults(400)
+                  
             # Convenience function for generating a list of all the Color objects
             def to_list(self):
                 return [Color(n, **c) for n,c in self.dict.items()]
+            
+            # Function to bulk-set the default values (i.e. red, blue, green, etc.)
+            def _update_defaults(self, l):
+                (self.red, self.orange, self.yellow,
+                 self.green, self.cyan, self.blue, 
+                 self.purple, self.magenta, self.base) = self.filter("roygcbpmk", l, "h_l", "colors")
+            
+            # Function to return the default values as a list of Color objects
+            # If override_names is set to False, these objects will preserve their names (i.e. red-400, green-600, etc.)
+            ## If it is set to True, then the Color names returned will instead be the short versions (i.e. red, green, etc.)
+            def get_defaults(self, override_names: bool=False):
+                defaults = [self.red, self.orange, self.yellow,
+                            self.green, self.cyan, self.blue, 
+                            self.purple, self.magenta, self.base]
+                if override_names == False:
+                    return defaults
+                elif override_names == True:
+                    names = ["red","orange","yellow","green","cyan","blue","purple","magenta"]
+                    if self.base.l == 0:
+                        names.append("paper")
+                    elif self.base.l == 1000:
+                        names.append("black")
+                    else:
+                        names.append("base")
+                    return [Color(n, c.h, c.l, c.hex, c.rgb) for n,c in zip(names,defaults)]
+                else:
+                    raise Exception(f"Invalid input for override_names: {override_names}; only True or False are accepted, see documentation for details.")
             
             # A function to allow for easy filtering/selection of the colors
             # h is for selecting by hue 
@@ -306,8 +365,12 @@ class FlexokiSchema:
                         
                         # Once all the above are finished processing, should have a list of color codes that we can then use to filter the main color list like so:
                         for hue in _h:
-                            # Appending colors that match the hue to our list
-                            cfilt += [c for c in clist if c.h==hue]
+                            # Custom filter for when base is selected; don't want to return base-0/base-1000, instead return paper/black
+                            if hue == "k":
+                                cfilt += [c for c in clist if c.h==hue and not (c.name=="base-0" or c.name=="base-1000")]
+                            # Otherwise, appending colors that match the hue to our list
+                            else:
+                                cfilt += [c for c in clist if c.h==hue]
                     # Alternatively, if None is passed, then no filtering is needed
                     else:
                         cfilt = clist
@@ -350,8 +413,15 @@ class FlexokiSchema:
                         
                         # Once all the above are finished processing, should have a list of color codes that we can then use to filter the main color list like so:
                         for light in _l:
-                            # Appending colors that match the hue to our list
-                            cfilt += [c for c in clist if c.l==light]
+                            # Custom filter for when paper/base-0 is selected; need to only return one of them
+                            if light == 0:
+                                cfilt += [self.paper]
+                            # Similar filter for when black/base-1000 is selected
+                            elif light == 1000:
+                                cfilt += [self.black]
+                            # Otherwise, appending colors that match the lightness to our list
+                            else:
+                                cfilt += [c for c in clist if c.l==light]
                     # Alternatively, if None is passed, then no filtering is needed
                     else:
                         cfilt = clist
@@ -391,16 +461,161 @@ class FlexokiSchema:
         
         self.colors = colors()
 
+        # This class will handle all the palettes (collections of colors)
+        class palettes:
+            # The colors class needs to be passed here, as the filter function is necessary during the set-up
+            def __init__(self, colors, l):
+                # Initializing all the monochromatic palettes - single color, every lightness value
+                self.grays = colors.filter("k", None)
+                self.blacks = colors.filter("k", None)
+                self.whites = colors.filter("k", None)
+                self.base = colors.filter("k", None)
+
+                self.reds = colors.filter("r", None)
+                self.oranges = colors.filter("o", None)
+                self.yellows = colors.filter("y", None)
+                self.greens = colors.filter("g", None)
+                self.cyans = colors.filter("c", None)
+                self.blues = colors.filter("b", None)
+                self.purples = colors.filter("p", None)
+                self.magentas = colors.filter("m", None)
+
+                # Initializing all the monolightness palettes - single lightness value, every color
+                self.l50  = colors.filter(None, 50)
+                self.l100 = colors.filter(None, 100)
+                self.l150 = colors.filter(None, 150)
+                self.l200 = colors.filter(None, 200)
+                self.l300 = colors.filter(None, 300)
+                self.l400 = colors.filter(None, 400)
+                self.l500 = colors.filter(None, 500)
+                self.l600 = colors.filter(None, 600)
+                self.l700 = colors.filter(None, 700)
+                self.l800 = colors.filter(None, 800)
+                self.l850 = colors.filter(None, 850)
+                self.l900 = colors.filter(None, 900)
+                self.l950 = colors.filter(None, 950)
+
+                # Finally, initializing a special palette called "defaults"
+                # which will contain the monolightness palette for the current theme/lightness color chosen
+                self._defaults = Palette(colors.get_defaults(override_names=False))
+            
+            # Setting up the defaults palette so that it can be updated
+            @property
+            def defaults(self):
+                return self._defaults
+            
+            @defaults.setter
+            def defaults(self, p):
+                if not isinstance(p, Palette):
+                    raise Exception("Invalid value passed to palettes.defaults; only Palette objects can be used. Note that defaults should not be set directly by the user - it is automatically set when the lightness/theme values are changed.")
+                else:
+                    self._defaults = p
+
+        self.palettes = palettes(self.colors, self._lightness)
+
+    # Creating the properties for lightness, and how they will update the other colors
+    @property
+    def lightness(self):
+        return self._lightness
+
+    @lightness.setter
+    def lightness(self, l):
+        if l is None:
+            raise Exception(f"Invalid input for lightness: {l}; the only accepted values are {l_values[1:-1]}.")
+        elif l in l_values[1:-1]:
+            self._lightness = l
+            # Setting the appropriate theme too, if needed
+            if l == 400:
+                self._theme = "light"
+            elif l == 600:
+                self._theme = "dark"
+            else:
+                self._theme = None
+            # This is the step to reset all the defaults
+            self.colors._update_defaults(l)
+            self.palettes.defaults = Palette(self.colors.get_defaults(override_names=False))
+        else:
+            raise Exception(f"Invalid input for lightness: {l}; the only accepted values are {l_values[1:-1]}.")
+    
+    # Creating the properties for theme, and how they will update the other colors
+    @property
+    def theme(self):
+        if self._theme is not None:
+            return self._theme
+        else:
+            print(f"No theme set; current lightness value is {self._lightness}")
+
+    @theme.setter
+    def theme(self, t):
+        if t is None:
+            raise Exception(f"Invalid input for theme: {t}; only 'light' and 'dark' are accepted values.")
+        elif t.lower() == "light":
+            self._theme = t.lower()
+            self.lightness = 400
+        elif t.lower() == "dark":
+            self._theme = t.lower()
+            self.lightness = 600
+        else:
+            raise Exception(f"Invalid input for theme: {t}; only 'light' and 'dark' are accepted values.")
+
+
     # Creating a more convenient way to access the filter function: so you can use Flexoki.filter() instead of Flexoki.colors.filter()
     def filter(self, h: List[str] | str=None, l: List[int] | int | slice=None, order:Literal["h_l","l_h"]=None, returns:Literal["palette","colors","colours","hexes","rgb","rgba"]=None):
         return self.colors.filter(h, l, order, returns)
 
-# An initialized object of the FlexokiColors class
-# Colors = FlexokiColors()
+    # Creating methods for changing the lightness values of the default colors
+    def set_lightness(self, lightness: int):
+        self.lightness = lightness
 
-Flexoki = FlexokiSchema()
-
-Flexoki.colors.red_50
-
-Flexoki.colors.filter("r", 150)
-Flexoki.filter("r", 150)
+    # Lightness values for default colors can also be set via the "theme"
+    def set_theme(self, theme: Literal["light","dark"]):
+        self.theme = theme
+    
+    # Function to register colors with matplotlib, so they are callable within matplotlib plot() functions via strings
+    # colors needs to be a list of either dicts, Colors, lists, or tuples
+    ## If dicts are passed, they need two keys: "name" (what the name of the color should be, excepting the prefix) and "color" (either the hex code or the RGBA values)
+    ## If colors are passed, name and hex are used from their attributes
+    ## If lists or tuples are passed, they need two values: the first should be the name, the second the color value
+    ## If no colors are passed, then it will register all the colors available under self.colors
+    # prefix is the string that will be prepended to the name for each color
+    ## A colon will be inserted to separate the prefix from the name, which can help prevent overwriting default names
+    ## Ex. for "red" with a prefix of "flexoki", the full color name is "flexoki:red"
+    # defaults is a boolean variable telling the function whether to register the default/theme colors as well
+    ## Note that this is ONLY used if no color list is passed! (colors = None)
+    ## Otherwise it is silently ignored
+    def register_matplotlib(self, colors:List[dict | Color | list | tuple]=None, prefix:str="flexoki", defaults:bool=True):
+        # First, if colors is None, getting the full list of colors we have
+        if colors is None:
+            colors = self.colors.to_list()
+            if defaults == True:
+                colors += self.colors.get_defaults(override_names=True)
+        # Then making sure a prefix was passed
+        if prefix is None or not isinstance(prefix, str):
+            raise Exception(f"Invalid input for prefix - must be a valid string; see documentation for details.")
+        # Then, checking that a list of colors was passed
+        if not isinstance(colors, (list, tuple)):
+            raise Exception(f"Invalid input for colors - must be a list of dicts, Colors, or lists or tuples (of length 2); see documentation for details.")
+        else:
+            # Storing the eventual list of colors we need to update
+            added_colors = {}
+            # Iterating though what was passed; doing it this way allows for mixing of types
+            for c in colors:
+                # Colors
+                if isinstance(c, Color):
+                    added_colors[f"{prefix}:{c.name}"] = c.color
+                # Dictionaries
+                elif isinstance(c, dict):
+                    # Checking for keys
+                    if "name" in c.keys() and "color" in c.keys():
+                        added_colors[f"{prefix}:{c["name"]}"] = c["color"]
+                    else:
+                        raise Exception(f"Invalid input for colors: {c}; dictionaries must have two keys in them, 'name' and 'color'; see documentation for details.")
+                # Lists/Tuples
+                elif isinstance(c, (list, tuple)):
+                    if len(c) > 1 and isinstance(c[0], str):
+                        added_colors[f"{prefix}:{c[0]}"] = c[1]
+                    else:
+                        raise Exception(f"Invalid input for colors: {c}; lists and tuples must be of length 2, where 'name' corresponds to the first entry and 'color to the second; see documentation for details.")
+            # Once complete, register the colors
+            # from https://stackoverflow.com/questions/76886019/create-new-named-color-in-matplotlib
+            matplotlib.colors.get_named_colors_mapping().update(added_colors)

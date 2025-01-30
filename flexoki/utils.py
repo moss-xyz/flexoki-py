@@ -17,6 +17,3 @@ h_codes = {
 }
 
 l_values = [0, 50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 850, 900, 950, 1000]
-
-def _parse_hstring(hstring, returns):
-    pass
