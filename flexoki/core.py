@@ -62,6 +62,12 @@ class Palette:
         # All the colors that make up the palette will be stored in a list
         self.colors = colors
     
+    def __getitem__(self, val):
+        return self.colors[val]
+    
+    def __str__(self):
+        return self.colors
+    
     # Function for returning the name
     def names(self):
         return [c.name for c in self.colors]
@@ -268,7 +274,17 @@ class FlexokiSchema:
                     setattr(self, cname, Color(n, **c))
                 
                 self._update_defaults(400)
-                  
+
+            # Overriding how get retrieval works (so that you can do colors["color-name"])
+            def __getitem__(self, val):
+                # Ensuring it is properly formatted
+                val_clean = val.lower().replace("-","_").replace(" ","_")
+                # Returning the corresponding color entry
+                try:
+                    getattr(self, val_clean)
+                except:
+                    raise Exception(f"Invalid color name input: {val}; see documentation for details on color naming schema.")
+
             # Convenience function for generating a list of all the Color objects
             def to_list(self):
                 return [Color(n, **c) for n,c in self.dict.items()]
@@ -467,6 +483,7 @@ class FlexokiSchema:
             def __init__(self, colors, l):
                 # Initializing all the monochromatic palettes - single color, every lightness value
                 self.grays = colors.filter("k", None)
+                self.greys = colors.filter("k", None)
                 self.blacks = colors.filter("k", None)
                 self.whites = colors.filter("k", None)
                 self.base = colors.filter("k", None)
@@ -512,6 +529,10 @@ class FlexokiSchema:
                     self._defaults = p
 
         self.palettes = palettes(self.colors, self._lightness)
+
+    # Overriding how get retrieval works (so that FlexokiSchema["color-name"] works the same as FlexokiSchema.colors["color-name"]
+    def __getitem__(self, val):
+        return self.colors[val]
 
     # Creating the properties for lightness, and how they will update the other colors
     @property
