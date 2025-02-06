@@ -93,9 +93,12 @@ class Palette:
             return [c.rgba for c in self.colors]
     
     # Function for reversing the order of colors if needed
-    def reverse(self):
-        self.colors = self.colors[::-1]
-        return self
+    def reverse(self, copy=True):
+        if copy == True:
+            return Palette(self.colors[::-1])
+        else:
+            self.colors = self.colors[::-1]
+            return self
 
     # Function to create a matplotlib colormap from the selected palette
     # If kind is set to 'discrete', will create a Listed Colormap
@@ -281,7 +284,7 @@ class FlexokiSchema:
                 val_clean = val.lower().replace("-","_").replace(" ","_")
                 # Returning the corresponding color entry
                 try:
-                    getattr(self, val_clean)
+                    return getattr(self, val_clean)
                 except:
                     raise Exception(f"Invalid color name input: {val}; see documentation for details on color naming schema.")
 
@@ -351,7 +354,7 @@ class FlexokiSchema:
                                 _h = []
                                 for c in h:
                                     if c not in h_codes.values():
-                                        raise Exception(f"Invalid input for h: {c}; only valid colors are shortcodes are accepted, see documentation for details.")    
+                                        raise Exception(f"Invalid input for h: {c}; only valid colors and shortcodes are accepted, see documentation for details.")    
                                     else:
                                         _h.append(c)
 
@@ -361,7 +364,8 @@ class FlexokiSchema:
                             _h = []
                             for c in h:
                                 # Making sure it is a valid string
-                                if not isinstance(c, str) or not c.lower() in h_codes.values() or not c.lower() in h_codes.keys():
+                                # if not isinstance(c, str) or not c.lower() in h_codes.values() or not c.lower() in h_codes.keys():
+                                if not isinstance(c, str) or (not c.lower() in h_codes.values() and not c.lower() in h_codes.keys()):
                                     raise Exception(f"Invalid input for h: {c}; only valid colors are shortcodes are accepted, see documentation for details.")
                                 # Converting the string based on what type of code it is, and appending to our eventual list
                                 c = c.lower()
@@ -373,11 +377,11 @@ class FlexokiSchema:
                                     _h.append(h_codes[c])
                                 # If it is neither of these things, raise an error
                                 else:
-                                    raise Exception(f"Invalid input for h: {c}; only valid colors are shortcodes are accepted, see documentation for details.")
+                                    raise Exception(f"Invalid input for h: {c}; only valid colors and shortcodes are accepted, see documentation for details.")
                                 
                         # If none of these things, raise an exception
                         else:
-                            raise Exception(f"Invalid input for h: {h}; only valid colors are shortcodes are accepted, see documentation for details.")
+                            raise Exception(f"Invalid input for h: {h}; only valid colors and shortcodes are accepted, see documentation for details.")
                         
                         # Once all the above are finished processing, should have a list of color codes that we can then use to filter the main color list like so:
                         for hue in _h:

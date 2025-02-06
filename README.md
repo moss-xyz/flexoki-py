@@ -94,7 +94,7 @@ Flexoki.colors.red_50.hex
 Flexoki.colors.red_50.rgb
 ```
 
-For more information on the `Color` object, see the documentation in `docs/`
+For more information on the `Color` object, see the documentation in `docs/colors.ipynb`
 
 #### Accessing Palettes
 
@@ -106,7 +106,7 @@ Flexoki.palettes.reds # will return all the red hues, ordered from lightest to d
 Flexoki.palettes.l150 # will return all the hues that have a lightness value of 150 (these palettes always start with l followed by 2 or 3 numbers)
 ```
 
-Similar to `Color` objects, `Palette` objects allow for easy accessing of the names, hex codes, and rgb values of the underlying colors. See the documentation in `docs/` for examples on how to do so.
+Similar to `Color` objects, `Palette` objects allow for easy accessing of the names, hex codes, and rgb values of the underlying colors. See the documentation in `docs/palettes.ipynb` for examples on how to do so.
 
 #### Setting a Theme
 
@@ -142,7 +142,7 @@ Flexoki.filter(h=["red","blue","green"], # only return reds, blues, and greens
                returns="palette") # return a Palette object
 ```
 
-For more details on each of the accepted arguments, see the documentation in `docs/`.
+For more details on each of the accepted arguments, see the documentation in `docs/filters.ipynb`.
 
 #### Integration with `matplotlib`
 
@@ -195,5 +195,13 @@ These colormaps can also be *named and registered* with the colormap repository 
 ### Roadmap
 
 I expect the next *major* update to this package to occur only if/when the main Flexoki framework is updated. Otherwise, I might make small tweaks there and there based on my own use of this package, as well as feedback from other users (if any).
+
+Some things I am considering:
+
+- Registering colormaps with matplotlib using the `register_matplotlib()` function
+
+- Easy re-ordering of monolightness palettes
+
+- Ability to append paper/black colors to monochromatic palettes
 
 ### License
