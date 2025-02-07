@@ -130,7 +130,7 @@ class FlexokiSchema:
 
         # Setting up default properties
         self._theme = "light"
-        self._lightness = 400
+        self._lightness = 600
 
         # This class will handle all the individual colors
         class colors:
@@ -276,7 +276,7 @@ class FlexokiSchema:
                     cname = n.lower().replace("-","_")
                     setattr(self, cname, Color(n, **c))
                 
-                self._update_defaults(400)
+                self._update_defaults(600)
 
             # Overriding how get retrieval works (so that you can do colors["color-name"])
             def __getitem__(self, val):
@@ -410,14 +410,14 @@ class FlexokiSchema:
                             _l = [l]
 
                         # If l is a list of some sort
-                        elif isinstance(l, (tuple, list, Iterable)):
+                        elif isinstance(l, (tuple, list)):
                             _l = []
                             for k in l:
                                 # Making sure it is a valid integer
                                 if not isinstance(k, int) or not k in l_values:
                                     raise Exception(f"Invalid input for l: {k}; only valid lightness values are accepted, see documentation for details.")
                                 else:
-                                    _l.append(l)
+                                    _l.append(k)
                         # If l is a slice instead
                         elif isinstance(l, (slice, range)):
                             # Extracting the values
@@ -426,7 +426,7 @@ class FlexokiSchema:
                             if l.start > l.stop:
                                 l_all.reverse()
                             # Keeping just the lightness values that fall within the range
-                            _l = [l for l in l_all if l>=l_min and l<=l_max]
+                            _l = [k for k in l_all if k>=l_min and k<=l_max]
                         # If none of these things, raise an exception
                         else:
                             raise Exception(f"Invalid input for l: {l}; only valid lightness values are accepted, see documentation for details.")
@@ -550,9 +550,9 @@ class FlexokiSchema:
         elif l in l_values[1:-1]:
             self._lightness = l
             # Setting the appropriate theme too, if needed
-            if l == 400:
+            if l == 600:
                 self._theme = "light"
-            elif l == 600:
+            elif l == 400:
                 self._theme = "dark"
             else:
                 self._theme = None
@@ -576,10 +576,10 @@ class FlexokiSchema:
             raise Exception(f"Invalid input for theme: {t}; only 'light' and 'dark' are accepted values.")
         elif t.lower() == "light":
             self._theme = t.lower()
-            self.lightness = 400
+            self.lightness = 600
         elif t.lower() == "dark":
             self._theme = t.lower()
-            self.lightness = 600
+            self.lightness = 400
         else:
             raise Exception(f"Invalid input for theme: {t}; only 'light' and 'dark' are accepted values.")
 

@@ -127,7 +127,7 @@ Flexoki.colors.purple # purple-150
 Flexoki.palettes.defaults # all the colors at a lightness value of 150
 ```
 
-See the documentation in `docs/` for more examples on how this works.
+See the documentation in `docs/theme.ipynb` for more examples on how this works.
 
 #### Filtering for Colors
 
@@ -203,5 +203,7 @@ Some things I am considering:
 - Easy re-ordering of monolightness palettes
 
 - Ability to append paper/black colors to monochromatic palettes
+
+- Allowing default colors to be accessed directly from the `FlexokiSchema` object
 
 ### License
