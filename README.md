@@ -59,7 +59,7 @@ This package relies on three custom classes/objects to function:
 
 - `Color`: corresponds to a single color with a specified `hue` and `lightness`; also has properties for `name`, `hex` (code), and `rgb`. Currently, these are hardcoded based on the definitions from Flexoki 2.0, but could eventually be manipulated programmatically if I learn how to represent the OKLab colorspace in Python.
 
-- `Palette`: corresponds to a collection of `Color` objects, with a specified `name` and `colors` (a list of `Color` objects). It also has properties for `hex` (a list of hex codes) and `rgb` (a list of RGB tuples). Usually, either a monochromatic array of colors (i.e. same hue at different lightness values) or a "monolightness" array (i.e. different hues at the same lightness value).
+- `Palette`: corresponds to a *collection* of `Color` objects, with a specified `name` and `colors` (a list of `Color` objects). It also has properties for `hex` (a list of hex codes) and `rgb` (a list of RGB tuples). Usually, either a monochromatic array of colors (i.e. same hue at different lightness values) or a "monolightness" array (i.e. different hues at the same lightness value).
 
 - `FlexokiSchema`: This is the main object that will be used to access the colors and palettes. It has *subclasses* for `colors` (to access `Color` objects; `FlexokiSchema.colors`) and `palettes` (to access `Palette` objects; `FlexokiSchema.palettes`), as well as a variety of other functions for helping splice and filter the colors as needed.
 
@@ -172,7 +172,7 @@ Flexoki.register_matplotlib()
 df.plot(ax=ax, color="flexoki:cyan-500", ...)
 ```
 
-Additional options for limiting which colors are registered, and customizing the prefix, are available; see the `docs/` section for details.
+Additional options for limiting which colors are registered, and customizing the prefix, are available; see the `docs/matplotlib` section for details.
 
 **Palettes**
 
@@ -184,11 +184,40 @@ Flexoki.reds.to_colormap(kind="smooth") # will make a LinearSegmentedColormap (s
 Flexoki.l700.to_colormap(kind="discrete") # will make a ListedColormap (discrete colors visible)
 ```
 
-These colormaps can also be *named and registered* with the colormap repository of `matplotlib` as part of this function: see the `docs/` section for examples of usage. Note that `register_matplotlib()` (shown above), does *not* register palettes, only colors.
+These colormaps can also be *named and registered* with the colormap repository of `matplotlib` as part of this function: see the `docs/matplotlib` section for examples of usage. Note that `register_matplotlib()` (shown above), does *not* register palettes, only colors.
 
 ---
 
 ### Example Usage
+
+#### Using individual colors with `matplotlib`
+
+```py
+import matplotlib.pyplot
+from flexoki import Flexoki
+
+# Creating a simple line plot
+fig, ax = matplotlib.pyplot.subplots(1,1, figsize=(5,5))
+ax.plot([0,4],[1,1], color=Flexoki.colors.red_400.hex, linewidth=30) # dot notation
+ax.plot([0,4],[2,2], color=Flexoki.colors["green-500"].hex, linewidth=30) # dict notation
+ax.plot([0,4],[3,3], color=Flexoki.colors.blue.hex, linewidth=30) # using a default value
+```
+
+![Graph of red, green, and blue lines](./docs/readme_graphics/color.png)
+
+#### Using a palette with `matplotlib`
+
+```py
+import random
+import matplotlib.pyplot
+from flexoki import Flexoki
+
+# Creating a bar chart with multiple categories and random values
+fig, ax = matplotlib.pyplot.subplots(1,1, figsize=(10,5))
+ax.bar(range(0,9,1), height=[random.randint(2,10) for x in range(0,9)], color=Flexoki.palettes.l300.hex())
+```
+
+![Bar chart with each hue available in the Flexoki palette](./docs/readme_graphics/palette.png)
 
 ---
 
@@ -207,3 +236,5 @@ Some things I am considering:
 - Allowing default colors to be accessed directly from the `FlexokiSchema` object
 
 ### License
+
+The license is the same as Flexoki's (MIT).
