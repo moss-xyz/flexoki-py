@@ -112,9 +112,10 @@ class Palette:
         else:
             if kind == "discrete":
                 cmap = matplotlib.colors.ListedColormap(self.hex())
+                matplotlib.colormaps.unregister("from_list") # unregistering this specific colormap
             else:
                 cmap = matplotlib.colors.LinearSegmentedColormap.from_list("mycmap", self.hex())
-                matplotlib.cm.unregister("mycmap") # unregistering this specific colormap
+                matplotlib.colormaps.unregister("mycmap") # unregistering this specific colormap
 
             if register is not None and not isinstance(register, str):
                 raise Exception(f"Invalid input for register: {register}; only strings are accepted.")
@@ -627,7 +628,7 @@ class FlexokiSchema:
             for c in colors:
                 # Colors
                 if isinstance(c, Color):
-                    added_colors[f"{prefix}:{c.name}"] = c.color
+                    added_colors[f"{prefix}:{c.name}"] = c.hex
                 # Dictionaries
                 elif isinstance(c, dict):
                     # Checking for keys
